@@ -1,111 +1,59 @@
-import { useEffect, useRef } from "react";
-import {
-    TrendingUp,
-    TrendingDown,
-    DollarSign,
-    Zap,
-    ChevronDown,
-} from "lucide-react";
-import { Bounce, toast } from "react-toastify";
-// import { base_url, webhook_url } from "./utils/baseUrl";
-// import axios from "axios";
+import { useEffect, useRef, useState } from "react";
+import { TrendingDown, Zap, Check, Copy } from "lucide-react";
 
 function App() {
     const ref = useRef();
-    // const [priceForBuy, setPriceForBuy] = useState("");
-    // const [priceForSell, setPriceForSell] = useState("");
-    // const [priceForWebhook, setPriceForWebhook] = useState("");
-    // const [isSubmittingBuy, setIsSubmittingBuy] = useState(false);
-    // const [isSubmittingSell, setIsSubmittingSell] = useState(false);
-    // const [isSubmittingWebhook, setIsSubmittingWebhook] = useState(false);
-    // const [selectedAction, setSelectedAction] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [copyStatus, setCopyStatus] = useState("idle");
 
-    // const placeOrderBuy = async () => {
-    //     if (!priceForBuy) return;
-
-    //     setIsSubmittingBuy(true);
-    //     try {
-    //         const response = await axios.post(`${base_url}/buy`, {
-    //             price: Number(priceForBuy),
-    //             type: "BUY",
-    //         });
-    //         console.log(response.data);
-
-    //         await new Promise((resolve) => setTimeout(resolve, 1000));
-    //         console.log("Buy order placed:", { priceForBuy, type: "BUY" });
-    //         setPriceForBuy("");
-    //     } catch (error) {
-    //         console.error("Buy order failed:", error);
-    //     } finally {
-    //         setIsSubmittingBuy(false);
-    //     }
-    // };
-
-    // const placeOrderSell = async () => {
-    //     if (!priceForSell) return;
-
-    //     setIsSubmittingSell(true);
-    //     try {
-    //         const response = await axios.post(`${base_url}/sell`, {
-    //             price: Number(priceForSell),
-    //             type: "SELL",
-    //         });
-    //         console.log(response.data);
-
-    //         await new Promise((resolve) => setTimeout(resolve, 1000));
-    //         console.log("Sell order placed:", { priceForSell, type: "SELL" });
-    //         setPriceForSell("");
-    //     } catch (error) {
-    //         console.error("Sell order failed:", error);
-    //     } finally {
-    //         setIsSubmittingSell(false);
-    //     }
-    // };
-
-    // const placeOrderWebhook = async () => {
-    //     if (!priceForWebhook) return;
-    //     setIsSubmittingWebhook(true);
-
-    //     try {
-    //         const parsedUrl = JSON.parse(localStorage.getItem("url"));
-    //         const response = await axios.post(
-    //             `${parsedUrl}/webhook`,
-    //             {
-    //                 symbol: "SBIN-EQ",
-    //                 action: selectedAction,
-    //                 price: Number(priceForWebhook),
-    //             },
-    //             {
-    //                 headers: {
-    //                     "ngrok-skip-browser-warning": "true",
-    //                 },
-    //             }
-    //         );
-    //         console.log(response.data);
-
-    //         await new Promise((resolve) => setTimeout(resolve, 1000));
-    //         console.log("order placed:", { priceForWebhook, type: "SELL" });
-    //         setPriceForWebhook("");
-    //     } catch (error) {
-    //         console.error("webhook order failed:", error);
-    //     } finally {
-    //         setIsSubmittingWebhook(false);
-    //     }
-    // };
+    async function fetchWebhookUrl() {
+        setLoading(true);
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_BASE_URL}/ngrok-url`
+            );
+            const data = await response.json();
+            console.log("⚡ Got ngrok URL:", data.url);
+            localStorage.setItem("url", data.url);
+        } catch (error) {
+            console.error("Failed to fetch ngrok URL", error);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     useEffect(() => {
-        fetch(`${import.meta.env.VITE_BASE_URL}/ngrok-url`)
-            .then((res) => res.json())
-            .then((data) => {
-                console.log("⚡ Got ngrok URL:", data.url);
-
-                localStorage.setItem("url", data.url);
-            })
-            .catch((err) => console.error("Failed to fetch ngrok URL", err));
+        fetchWebhookUrl();
     }, []);
+
+    const handleCopyToClipboard = async () => {
+        if (ref.current && ref.current.value) {
+            setCopyStatus("copying");
+
+            try {
+                await navigator.clipboard.writeText(ref.current.value);
+                setCopyStatus("copied");
+
+                setTimeout(() => {
+                    setCopyStatus("idle");
+                }, 2000);
+            } catch (error) {
+                console.error("Failed to copy to clipboard:", error);
+                setCopyStatus("idle");
+            }
+        }
+    };
 
     console.log("ngrok updated url", localStorage.getItem("url"));
     const webhook_url = localStorage.getItem("url");
+
+    if (loading) {
+        return (
+            <div className="bg-black w-full h-[100vh] flex justify-center items-center text-4xl text-green-600 ">
+                Loading...
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4 relative overflow-hidden">
@@ -147,135 +95,71 @@ function App() {
                                         Web-Hook
                                     </h2>
                                 </div>
-                                {/* <div className="px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full">
-                                    <span className="text-green-400 font-semibold text-sm">
-                                        SHORT
-                                    </span>
-                                </div> */}
                             </div>
 
                             <div className="space-y-6">
-                                {/* <div className="relative">
-                                    <div className="relative space-y-3">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                                            <TrendingUp className="h-5 w-5 text-green-400" />
-                                        </div>
-                                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none z-10">
-                                            <ChevronDown className="h-5 w-5 text-gray-400" />
-                                        </div>
-                                        <select
-                                            value={selectedAction}
-                                            onChange={(e) =>
-                                                setSelectedAction(
-                                                    e.target.value
-                                                )
-                                            }
-                                            className="w-full pl-12 pr-12 py-4 bg-gray-900/50 border border-gray-700/50 rounded-xl text-white text-lg font-medium focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all duration-300 backdrop-blur-sm appearance-none cursor-pointer"
-                                        >
-                                            <option
-                                                value=""
-                                                className="bg-gray-900 text-white"
-                                                disabled
-                                            >
-                                                Select Action
-                                            </option>
-                                            <option
-                                                value="BUY"
-                                                className="bg-gray-900 text-white"
-                                            >
-                                                BUY
-                                            </option>
-                                            <option
-                                                value="SELL"
-                                                className="bg-gray-900 text-white"
-                                            >
-                                                SELL
-                                            </option>
-                                        </select>
-                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/0 via-green-500/5 to-green-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                                    </div>
-
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <DollarSign className="h-5 w-5 text-green-400" />
-                                        </div>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            value={priceForWebhook}
-                                            onWheel={(e) => e.target.blur()}
-                                            onChange={(e) =>
-                                                setPriceForWebhook(
-                                                    e.target.value
-                                                )
-                                            }
-                                            placeholder="Enter price..."
-                                            className="w-full pl-12 pr-4 py-4 bg-gray-900/50 border border-gray-700/50 rounded-xl text-white text-lg font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all duration-300 backdrop-blur-sm"
-                                        />
-                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/0 via-green-500/5 to-green-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                                    </div>
-
-                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/0 via-green-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                                </div> */}
-
-                                {/* <button
-                                    onClick={placeOrderWebhook}
-                                    disabled={
-                                        isSubmittingWebhook || !priceForWebhook
-                                    }
-                                    className="w-full relative overflow-hidden bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-bold py-4 px-8 rounded-xl shadow-2xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none group"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                                    <span className="relative z-10 text-lg tracking-wide">
-                                        {isSubmittingWebhook
-                                            ? "PROCESSING..."
-                                            : "EXECUTE ORDER"}
-                                    </span>
-                                </button> */}
-
-                                <input
-                                    ref={ref}
-                                    type="text"
-                                    value={webhook_url}
-                                    className="border-green-300 rounded-2xl text-white p-6 w-full border-2   "
-                                />
+                                <div className="relative">
+                                    <input
+                                        ref={ref}
+                                        type="text"
+                                        value={webhook_url || ""}
+                                        readOnly
+                                        className="w-full bg-gray-900/50 border border-gray-700/50 rounded-xl text-white text-lg font-medium px-4 py-4 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all duration-300 backdrop-blur-sm"
+                                        placeholder="Webhook URL will appear here..."
+                                    />
+                                </div>
 
                                 <button
-                                    // onClick={placeOrderWebhook}
-                                    // disabled={
-                                    //     isSubmittingWebhook || !priceForWebhook
-                                    // }
-
-                                    className="w-full relative overflow-hidden bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-bold py-4 px-8 rounded-xl shadow-2xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none group cursor-pointer"
+                                    onClick={handleCopyToClipboard}
+                                    disabled={
+                                        !webhook_url || copyStatus === "copying"
+                                    }
+                                    className={`w-full relative overflow-hidden font-bold py-4 px-8 rounded-xl shadow-2xl transform transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none group ${
+                                        copyStatus === "copied"
+                                            ? "bg-gradient-to-r from-green-600 to-green-700"
+                                            : "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 hover:scale-[1.02] active:scale-[0.98]"
+                                    }`}
                                 >
-                                    {/* <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div> */}
-                                    <button
-                                        className="relative z-10 text-lg tracking-wide cursor-pointer"
-                                        onClick={() => {
-                                            if (ref.current) {
-                                                navigator.clipboard.writeText(
-                                                    ref.current.value
-                                                );
-                                                toast.info(
-                                                    "webhook url copied to clipboard",
-                                                    {
-                                                        position: "top-right",
-                                                        autoClose: 5000,
-                                                        hideProgressBar: false,
-                                                        closeOnClick: false,
-                                                        pauseOnHover: true,
-                                                        draggable: true,
-                                                        progress: undefined,
-                                                        theme: "dark",
-                                                        transition: Bounce,
-                                                    }
-                                                );
-                                            }
-                                        }}
-                                    >
-                                        Copy Webhook URL
-                                    </button>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+
+                                    <div className="relative z-10 flex items-center justify-center space-x-2 text-lg tracking-wide">
+                                        {copyStatus === "copying" && (
+                                            <>
+                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                <span>Copying...</span>
+                                            </>
+                                        )}
+                                        {copyStatus === "copied" && (
+                                            <>
+                                                <Check className="w-5 h-5 text-white animate-in zoom-in duration-200" />
+                                                <span>Copied!</span>
+                                            </>
+                                        )}
+                                        {copyStatus === "idle" && (
+                                            <>
+                                                <Copy className="w-5 h-5 text-white" />
+                                                <span>Copy Webhook URL</span>
+                                            </>
+                                        )}
+                                    </div>
                                 </button>
+
+                                {copyStatus === "copied" && (
+                                    <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-3 fade-in duration-500">
+                                        <div className="bg-gradient-to-r from-green-500/90 to-emerald-500/90 backdrop-blur-lg border border-green-400/50 rounded-xl px-6 py-3 shadow-2xl">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="relative">
+                                                    <Check className="w-5 h-5 text-white animate-in zoom-in duration-300" />
+                                                    <div className="absolute inset-0 w-5 h-5 bg-white/20 rounded-full blur-sm animate-pulse"></div>
+                                                </div>
+                                                <span className="text-white font-semibold tracking-wide">
+                                                    Webhook URL copied
+                                                    successfully
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

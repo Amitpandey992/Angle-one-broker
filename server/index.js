@@ -15,7 +15,9 @@ app.use(
             if (
                 !origin ||
                 origin.includes("localhost") ||
-                origin.includes("ngrok-free.app")
+                origin.includes("ngrok-free.app") ||
+                (process.env.NETLIFY_DEPLOY_URL &&
+                    origin.includes(process.env.NETLIFY_DEPLOY_URL))
             ) {
                 callback(null, true);
             } else {
@@ -38,12 +40,11 @@ app.use((req, res, next) => {
     next();
 });
 
-app.get("/", (req, res) => {
-    res.json("Hello world");
-});
+let publicUrl = "";
 
 app.get("/ngrok-url", (req, res) => {
-    res.json({ url: publicUrl });
+    const fallback = process.env.EXTERNAL_URL || `https://${req.headers.host}`;
+    res.json({ url: publicUrl || fallback });
 });
 
 app.post("/buy", async (req, res) => {
@@ -96,18 +97,27 @@ app.post("/webhook", async (req, res) => {
     }
 });
 
-let publicUrl = "";
+const isLocal = process.env.NODE_ENV !== "production";
 
 app.listen(PORT, async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
 
-    const url = await ngrok.connect({
-        addr: PORT,
-        authtoken: process.env.NGROK_AUTH_TOKEN,
-    });
-
-    publicUrl = url;
-    console.log("This is updated ngrok url", publicUrl);
-    console.log(`🌐 Ngrok tunnel started: ${url}`);
-    console.log(`📩 Use this URL in TradingView or Webhooks: ${url}/webhook`);
+    if (isLocal) {
+        try {
+            const url = await ngrok.connect({
+                addr: PORT,
+                authtoken: process.env.NGROK_AUTH_TOKEN,
+            });
+            publicUrl = url;
+            console.log("🌐 Ngrok tunnel started:", publicUrl);
+            console.log(
+                `📩 Use this URL in TradingView or Webhooks: ${publicUrl}/webhook`
+            );
+        } catch (e) {
+            console.warn("⚠️ ngrok failed to start:", e.message);
+        }
+    } else {
+        publicUrl = process.env.EXTERNAL_URL || "";
+        console.log("🌍 Production public URL:", publicUrl);
+    }
 });

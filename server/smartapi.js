@@ -65,7 +65,6 @@ async function placeOrder(price, txn) {
             duration: "DAY",
             price,
             quantity: qty,
-            
         });
 
         // Uncomment when DB is ready
