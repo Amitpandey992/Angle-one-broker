@@ -38,6 +38,10 @@ app.use((req, res, next) => {
     next();
 });
 
+app.get("/", (req, res) => {
+    res.json("Hello world");
+});
+
 app.get("/ngrok-url", (req, res) => {
     res.json({ url: publicUrl });
 });
